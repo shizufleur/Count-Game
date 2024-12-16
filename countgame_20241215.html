@@ -1,0 +1,230 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tempo Checking Game</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            text-align: center;
+            margin: 0;
+            padding: 0;
+            background-color: #f4f4f4;
+        }
+
+        #game-container {
+            margin: 20px auto;
+            max-width: 500px;
+            padding: 20px;
+            background: white;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+            border-radius: 8px;
+        }
+
+        h1 {
+            margin-bottom: 20px;
+        }
+
+        p {
+            margin: 10px 0;
+        }
+
+        input {
+            padding: 5px;
+            font-size: 20px;
+            margin-top: 10px;
+        }
+
+        label {
+            font-size: 20px;
+            font-weight: bold;
+        }
+
+        .instructions {
+            text-align: left;
+            margin: 20px 0;
+            font-size: 14px;
+        }
+
+        .footer {
+            margin-top: 20px;
+            font-size: 12px;
+            color: #555;
+        }
+
+        #footer-start {
+            display: block;
+        }
+
+        #footer-game {
+            display: none;
+        }
+    </style>
+</head>
+<body>
+    <div id="game-container">
+        <div id="start-screen">
+            <h1>Tempo Checking Game</h1>
+            
+            <label for="tempo">Set Tempo (BPM):</label>
+            <input type="number" id="tempo" min="30" max="300" value="60">
+            <br><br>
+            <label for="presses">Set Press Count:</label>
+            <input type="number" id="presses" min="5" max="300" value="30">
+            <p>Press Enter to Start</p>
+
+            <div class="instructions">
+              <h2>遊び方</h2>
+              <ul>
+                  <li>挑戦したいBPMと叩く回数を設定してください。</li>
+                  <li>Enterキーを押すと設定したBPMでカウントダウンしてくれます。</li>
+                  <li>設定した回数だけ、SpaceキーでBPMを刻み続けましょう。</li>
+                  <li>押されるべき時刻とズレた秒数がスコアとして加算されていきます。</li>
+                  <li>スコアが小さい方が優秀です。</li>
+              </ul>
+              <h2>注意</h2>
+              <ul>
+                  <li>0秒目は押さないでください</li>
+                  <li>PCでしかできません</li>
+              </ul>
+              <h2>コメント</h2>
+              <ul>
+                <li>とりあえず最低限遊べるようにしただけなのでクオリティは低いです。</li>
+                <li>暇があったら改良していくかもしれません。</li>
+            </ul>
+          </div>
+          <div id="footer-start" class="footer">Created by 20A</div>
+        </div>
+        <div id="countdown-screen" style="display: none;">
+            <h1>Get Ready</h1>
+            <p id="countdown"></p>
+        </div>
+        <div id="game-screen" style="display: none;">
+            <h1>Tempo: <span id="tempo-display"></span> BPM</h1>
+            <p>Press the Space key in time with the tempo!</p>
+            <p id="score">Score: 0.00</p>
+            <p>Press Count: <span id="press-count">0</span>/<span id="max-press-count">0</span></p>
+        </div>
+        <div id="end-screen" style="display: none;">
+            <h1>Game Result</h1>
+            <p>Your Score: <span id="final-score"></span></p>
+            <p>Press Enter to Return to Start Screen</p>
+        </div>
+        <div id="footer-game" class="footer">Created by 20A</div>
+    </div>
+    <script>
+        // JavaScript logic
+        const tempoInput = document.getElementById('tempo');
+        const pressesInput = document.getElementById('presses');
+        const startScreen = document.getElementById('start-screen');
+        const countdownScreen = document.getElementById('countdown-screen');
+        const gameScreen = document.getElementById('game-screen');
+        const endScreen = document.getElementById('end-screen');
+        const countdownText = document.getElementById('countdown');
+        const tempoDisplay = document.getElementById('tempo-display');
+        const scoreDisplay = document.getElementById('score');
+        const pressCountDisplay = document.getElementById('press-count');
+        const maxPressCountDisplay = document.getElementById('max-press-count');
+        const finalScore = document.getElementById('final-score');
+
+        let tempo = 60; // Default tempo set to 60 BPM
+        let interval = 0;
+        let gameStartTime = 0;
+        let lastPressTime = 0;
+        let score = 0;
+        let expectedPressTime = 0;
+        let gameActive = false;
+        let pressCount = 0;
+        let maxPresses = 0;
+
+        // Start Screen - Enter key listener
+        document.addEventListener('keydown', (event) => {
+            if (event.key === 'Enter' && startScreen.style.display !== 'none') {
+                startGameSetup();
+            }
+        });
+
+        function startGameSetup() {
+            tempo = parseInt(tempoInput.value) || 60; // Default to 60 if input is invalid
+            interval = 60000 / tempo; // Convert BPM to milliseconds
+            maxPresses = parseInt(pressesInput.value) || 10; // Get the number of presses from the input
+            startScreen.style.display = 'none';
+            countdownScreen.style.display = 'block';
+            countdownText.textContent = '5'; // Set the countdown to start from 5
+            let count = 4;
+            const countdownInterval = setInterval(() => {
+                if (count > 0) {
+                    countdownText.textContent = count.toString();
+                    count--;
+                } else {
+                    clearInterval(countdownInterval);
+                    startGame();
+                }
+            }, interval); // Use the tempo interval for countdown timing
+        }
+
+        function startGame() {
+            countdownScreen.style.display = 'none';
+            gameScreen.style.display = 'block';
+            tempoDisplay.textContent = tempo;
+            score = 0;
+            pressCount = 0;
+            scoreDisplay.textContent = `Score: ${score.toFixed(2)}`;
+            pressCountDisplay.textContent = pressCount.toString();
+            maxPressCountDisplay.textContent = maxPresses.toString();
+            gameActive = true;
+            gameStartTime = Date.now();
+            expectedPressTime = gameStartTime + interval;
+            lastPressTime = gameStartTime;
+
+            // Space key listener
+            document.addEventListener('keydown', trackTempo);
+        }
+
+        function trackTempo(event) {
+            if (!gameActive || event.key !== ' ') return;
+
+            const currentTime = Date.now();
+            const timeDifference = Math.abs(currentTime - expectedPressTime);
+            score += timeDifference / 1000; // Add time difference in seconds
+
+            expectedPressTime += interval; // Update next expected press time
+            pressCount++;
+            scoreDisplay.textContent = `Score: ${score.toFixed(2)}`;
+            pressCountDisplay.textContent = pressCount.toString();
+
+            if (pressCount >= maxPresses) {
+                endGame();
+            }
+        }
+
+        function endGame() {
+            gameActive = false;
+            document.removeEventListener('keydown', trackTempo);
+            gameScreen.style.display = 'none';
+            endScreen.style.display = 'block';
+            finalScore.textContent = score.toFixed(2);
+        }
+
+        // End Screen - Enter key listener
+        document.addEventListener('keydown', (event) => {
+            if (event.key === 'Enter' && endScreen.style.display !== 'none') {
+                resetGame();
+            }
+        });
+
+        function resetGame() {
+            endScreen.style.display = 'none';
+            startScreen.style.display = 'block';
+            document.getElementById('footer-start').style.display = 'block';
+            document.getElementById('footer-game').style.display = 'none';
+        }
+
+        function hideFooterForGame() {
+            document.getElementById('footer-start').style.display = 'none';
+            document.getElementById('footer-game').style.display = 'block';
+        }
+    </script>
+</body>
+</html>
